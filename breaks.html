@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Outhouse</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+
+  <!-- External Stylesheets -->
+   <link rel="stylesheet" href="css/bootstrap.min.css">
+   <link rel="stylesheet" href="css/style.css">
+   
+   <link rel="stylesheet" href="css/responsive.css">
+   <link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css">
+   <link href="https://fonts.googleapis.com/css?family=Baloo+Chettan+2:400,600,700|Poppins:400,600,700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+   
+   <!-- Row 1: Title and Image -->
+  <div class="container">
+   <!-- Row 1: Title and Image -->
+   <div class="row">
+      <div class="col-md-8">
+         <h1 class="banner_taital">Project Outhouse</h1>
+      </div>
+      <div class="col-md-3">
+         <img src="images/grade.png" alt="Grade Image" class="banner_img">
+      </div>
+   </div>
+
+   <!-- Row 2: Name and Homeroom Selection -->
+   <div class="row" style="margin-top: 1rem;">
+      <div class="col-md-12">
+         <input type="text" id="searchName" placeholder="Search by Name" class="search_text">
+      </div>
+   </div>
+
+  
+   
+
+   <!-- Row 2: Name and Homeroom Selection -->
+   <div class="row">
+      
+   </div>
+   
+   <!-- Row 3: Homeroom Header and Radio Buttons -->
+   <div class="row"">
+      <div class="col-md-12">
+         <h3>Choose your Homeroom</h3>  <!-- Added header here -->
+         <div style="font-size: 1.2em; font-style: bold; display: flex; justify-content: space-around;">
+            <label><input type="radio" name="homeroom" value="7A" style="transform: scale(1.5);"> 7A</label>
+            <label><input type="radio" name="homeroom" value="7B" style="transform: scale(1.5);"> 7B</label>
+            <label><input type="radio" name="homeroom" value="7C" style="transform: scale(1.5);"> 7C</label>
+            <label><input type="radio" name="homeroom" value="7D" style="transform: scale(1.5);"> 7D</label>
+            <label><input type="radio" name="homeroom" value="7E" style="transform: scale(1.5);"> 7E</label>
+            <label><input type="radio" name="homeroom" value="7F" style="transform: scale(1.5);"> 7F</label>
+         </div>
+      </div>
+   </div>
+
+   <!-- Row 4: Button -->
+   <div class="row" style="margin-top: 1rem;">
+      <div class="col text-center">
+         <button onclick="fetchData()" class="search_bt">See Your Breaks</button>
+      </div>
+   </div>
+
+
+<div id="results" style="margin-top: 1rem; margin-bottom: 1rem;"></div>
+</div>
+    <script>
+        const apiKey = 'AIzaSyBaHjs64DGiaLwms_YlmaSdxD9MNP43jPc'; // Replace with your API key
+        const sheetId = '1phAIVtUMagoOF37_9TzfS-HAejpVeT3cdTjg0NYj_og'; // Replace with your sheet ID
+        const range = '2024-2025 Room 313 Sign Out!A:C'; // Updated range to include homeroom
+
+        function fetchData() {
+            const nameQuery = document.getElementById('searchName').value.toLowerCase();
+
+            // Get selected homeroom from radio buttons
+            const homeroomQuery = document.querySelector('input[name="homeroom"]:checked')?.value || '';
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const rows = data.values || [];
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = ''; // Clear previous results
+
+                    if (rows.length > 1) { // Skip header row
+                        const namesArray = rows.slice(1).map(row => ({
+                            timestamp: formatDate(row[0]),
+                            name: row[1],
+                            homeroom: row[2]
+                        }));
+                        
+                        const fuse = new Fuse(namesArray, {
+                            keys: ['name'],
+                            threshold: 0.2,
+                            distance: 100 
+                        });
+
+                        const results = fuse.search(nameQuery);
+                        const filteredResults = results.filter(result =>
+                            homeroomQuery === '' || result.item.homeroom === homeroomQuery
+                        );
+
+                        if (filteredResults.length > 0) {
+                            let tableHTML = `
+                                <table class="result-table-grade">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Name</th>
+                                        <th>Homeroom</th>
+                                    </tr>`;
+                            
+                            filteredResults.forEach(result => {
+                                tableHTML += `
+                                    <tr>
+                                        <td>${result.item.timestamp}</td>
+                                        <td>${result.item.name}</td>
+                                        <td>${result.item.homeroom}</td>
+                                    </tr>`;
+                            });
+                            tableHTML += `</table>`;
+                            resultsDiv.innerHTML = tableHTML;
+                        } else {
+                            resultsDiv.innerHTML = '<p>No data found for this name in the selected homeroom.</p>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<p>No data found in the sheet.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    resultsDiv.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                });
+        }
+
+        // Format the timestamp into a more readable date format
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-US', {
+                month: 'long', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: 'numeric', hour12: true
+            });
+        }
+    </script>
+</body>
+</html>

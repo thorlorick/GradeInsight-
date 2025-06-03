@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Percentage</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+
+    <!-- External Stylesheets -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/jquery.mCustomScrollbar.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Baloo+Chettan+2:400,600,700|Poppins:400,600,700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Row 1: Title and Image -->
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <h1 class="banner_taital">Project Percentage</h1>
+            </div>
+            <div class="col-md-3">
+                <img src="images/grade.png" alt="Grade Image" class="banner_img">
+            </div>
+        </div>
+
+        <!-- Row 2: Student Number Input -->
+        <div class="row" style="margin-top: 1rem;">
+            <div class="col-md-12">
+                <input type="text" id="studentNumber" placeholder="Enter Student Number" class="search_text">
+            </div>
+        </div>
+
+        <!-- Row 3: Button to Search Marks -->
+        <div class="row" style="margin-top: 1rem;">
+            <div class="col text-center">
+                <button onclick="fetchStudentMark()" class="search_bt">Get Mark</button>
+            </div>
+        </div>
+
+        <!-- Row 4: Display Results -->
+        <div id="results" style="margin-top: 1rem; margin-bottom: 1rem;"></div>
+
+    </div>
+
+    <script>
+        const apiKey = 'AIzaSyBaHjs64DGiaLwms_YlmaSdxD9MNP43jPc'; // Replace with your API key
+        const sheetId = '1uQstsXok6L1pI_dyMYBxJo4Ilo4I66Nz5U6W1Z3vjL8'; // Replace with your sheet ID
+        const range = 'A3:AG'; // The data range (Student Numbers in Column F and Marks in Column AG)
+
+        function fetchStudentMark() {
+            const studentNumber = document.getElementById('studentNumber').value.trim();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (!studentNumber) {
+                resultsDiv.innerHTML = '<p>Please enter a student number.</p>';
+                return;
+            }
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const rows = data.values || [];
+
+                    if (rows.length > 0) {
+                        let markFound = false;
+
+                        // Loop through the rows to find the matching student number in Column F (index 5)
+                        for (let i = 0; i < rows.length; i++) {
+                            if (rows[i][5] === studentNumber) { // Check for matching student number in Column F
+                                // Fetch name from columns B and C (Last Name and First Name), and the mark from column AG (index 32)
+                                const lastName = rows[i][1];  // Column B: Last Name (Index 1)
+                                const firstName = rows[i][2]; // Column C: First Name (Index 2)
+                                const mark = rows[i][32];     // Column AG: Mark (Index 32)
+
+                                // Create a table to display the corresponding name and mark
+                                resultsDiv.innerHTML = `
+                                    <table style="width: 100%; margin-top: 1rem; border: 2px solid #333; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-size: 1.5rem; border-collapse: collapse;">
+                                        <tr style="background-color: #f4f4f4;">
+                                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Name</th>
+                                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Mark</th>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">${lastName}, ${firstName}</td>
+                                            <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">${mark}</td>
+                                        </tr>
+                                    </table>`;
+                                markFound = true;
+                                break;
+                            }
+                        }
+
+                        if (!markFound) {
+                            resultsDiv.innerHTML = '<p>Student number not found.</p>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = '<p>No data found in the sheet.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    resultsDiv.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                });
+        }
+    </script>
+
+</body>
+</html>
